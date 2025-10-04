@@ -1,9 +1,18 @@
 import { ApifyClient } from 'apify-client';
 import type { ApifyTweetData } from '@/types';
 
-const client = new ApifyClient({
-  token: process.env.APIFY_API_TOKEN,
-});
+let client: ApifyClient | null = null;
+
+function getApifyClient(): ApifyClient {
+  if (!client) {
+    const token = process.env.APIFY_API_TOKEN;
+    if (!token) {
+      throw new Error('APIFY_API_TOKEN is not set. Please add it to .env.local');
+    }
+    client = new ApifyClient({ token });
+  }
+  return client;
+}
 
 /**
  * Extract list ID from Twitter list URL
@@ -24,6 +33,7 @@ export async function scrapeTweetsFromList(
   maxItems: number = 100
 ): Promise<ApifyTweetData[]> {
   try {
+    const apifyClient = getApifyClient();
     const listId = extractListId(listUrl);
 
     // Using the Twitter List Scraper actor (mAxIirfenUcKwNXST)
@@ -36,11 +46,11 @@ export async function scrapeTweetsFromList(
 
     console.log(`Starting Apify scrape for list ${listId}...`);
 
-    const run = await client.actor('mAxIirfenUcKwNXST').call(input);
+    const run = await apifyClient.actor('mAxIirfenUcKwNXST').call(input);
 
     console.log(`Apify run completed. Fetching results...`);
 
-    const { items } = await client.dataset(run.defaultDatasetId).listItems();
+    const { items } = await apifyClient.dataset(run.defaultDatasetId).listItems();
 
     console.log(`Retrieved ${items.length} tweets from Apify`);
 
@@ -71,6 +81,7 @@ export async function scrapeTweetsFromMultipleLists(
   maxItemsPerList: number = 100
 ): Promise<ApifyTweetData[]> {
   try {
+    const apifyClient = getApifyClient();
     const listIds = listUrls.map(extractListId);
 
     const input = {
@@ -82,9 +93,9 @@ export async function scrapeTweetsFromMultipleLists(
 
     console.log(`Starting Apify scrape for ${listUrls.length} lists...`);
 
-    const run = await client.actor('mAxIirfenUcKwNXST').call(input);
+    const run = await apifyClient.actor('mAxIirfenUcKwNXST').call(input);
 
-    const { items } = await client.dataset(run.defaultDatasetId).listItems();
+    const { items } = await apifyClient.dataset(run.defaultDatasetId).listItems();
 
     console.log(`Retrieved ${items.length} tweets from Apify`);
 

@@ -8,6 +8,7 @@ export async function GET(request: Request) {
     const offset = parseInt(searchParams.get('offset') || '0');
     const sortBy = searchParams.get('sortBy') || 'tweetCount';
 
+    // Fetch users with tweet count in single query
     const users = await prisma.user.findMany({
       take: limit,
       skip: offset,
@@ -15,34 +16,41 @@ export async function GET(request: Request) {
         _count: {
           select: { tweets: true },
         },
-        tweets: {
-          select: {
-            likesCount: true,
-            retweetsCount: true,
-          },
-        },
       },
     });
 
-    const usersWithStats = users.map((user) => {
-      const avgLikes =
-        user.tweets.reduce((sum, t) => sum + t.likesCount, 0) /
-          user.tweets.length || 0;
-      const avgRetweets =
-        user.tweets.reduce((sum, t) => sum + t.retweetsCount, 0) /
-          user.tweets.length || 0;
-
-      return {
-        id: user.id,
-        twitterHandle: user.twitterHandle,
-        displayName: user.displayName,
-        followerCount: user.followerCount,
-        profileImageUrl: user.profileImageUrl,
-        tweetCount: user._count.tweets,
-        avgLikes: Math.round(avgLikes),
-        avgRetweets: Math.round(avgRetweets),
-      };
+    // Get engagement stats in one aggregated query (no N+1)
+    const userIds = users.map((u) => u.id);
+    const engagementStats = await prisma.tweet.groupBy({
+      by: ['userId'],
+      where: { userId: { in: userIds } },
+      _avg: {
+        likesCount: true,
+        retweetsCount: true,
+      },
     });
+
+    // Create a map for O(1) lookup
+    const statsMap = Object.fromEntries(
+      engagementStats.map((s) => [
+        s.userId,
+        {
+          avgLikes: Math.round(s._avg.likesCount || 0),
+          avgRetweets: Math.round(s._avg.retweetsCount || 0),
+        },
+      ])
+    );
+
+    const usersWithStats = users.map((user) => ({
+      id: user.id,
+      twitterHandle: user.twitterHandle,
+      displayName: user.displayName,
+      followerCount: user.followerCount,
+      profileImageUrl: user.profileImageUrl,
+      tweetCount: user._count.tweets,
+      avgLikes: statsMap[user.id]?.avgLikes || 0,
+      avgRetweets: statsMap[user.id]?.avgRetweets || 0,
+    }));
 
     // Sort
     if (sortBy === 'tweetCount') {

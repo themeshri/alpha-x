@@ -50,6 +50,8 @@ model Tweet {
   @@index([userId])
   @@index([createdAt])
   @@index([likesCount])
+  @@index([userId, createdAt])
+  @@index([scrapedAt])
   @@map("tweets")
 }
 
@@ -66,6 +68,8 @@ model TweetAnalysis {
 
   @@index([primaryCategory])
   @@index([sentiment])
+  @@index([primaryCategory, analyzedAt])
+  @@index([sentiment, analyzedAt])
   @@map("tweet_analysis")
 }
 
@@ -81,6 +85,8 @@ model TokenMention {
 
   @@index([tweetId])
   @@index([tokenTicker])
+  @@index([tokenTicker, createdAt])
+  @@index([createdAt])
   @@map("token_mentions")
 }
 
