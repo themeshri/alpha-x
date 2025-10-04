@@ -1,0 +1,127 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String   @id @default(cuid())
+  twitterHandle   String   @unique
+  displayName     String
+  followerCount   Int      @default(0)
+  bio             String?
+  profileImageUrl String?
+  addedToListDate DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tweets          Tweet[]
+
+  @@map("users")
+}
+
+model Tweet {
+  id            String   @id @default(cuid())
+  tweetId       String   @unique
+  userId        String
+  tweetText     String   @db.Text
+  tweetUrl      String
+  createdAt     DateTime
+  likesCount    Int      @default(0)
+  retweetsCount Int      @default(0)
+  repliesCount  Int      @default(0)
+  scrapedAt     DateTime @default(now())
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  analysis      TweetAnalysis?
+  tokenMentions TokenMention[]
+  projectMentions ProjectMention[]
+  narrativeTags NarrativeTag[]
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([likesCount])
+  @@map("tweets")
+}
+
+model TweetAnalysis {
+  id              String   @id @default(cuid())
+  tweetId         String   @unique
+  primaryCategory String
+  sentiment       String
+  confidenceScore Float
+  summary         String?  @db.Text
+  analyzedAt      DateTime @default(now())
+
+  tweet           Tweet    @relation(fields: [tweetId], references: [id], onDelete: Cascade)
+
+  @@index([primaryCategory])
+  @@index([sentiment])
+  @@map("tweet_analysis")
+}
+
+model TokenMention {
+  id             String   @id @default(cuid())
+  tweetId        String
+  tokenTicker    String
+  tokenName      String?
+  mentionContext String?  @db.Text
+  createdAt      DateTime @default(now())
+
+  tweet          Tweet    @relation(fields: [tweetId], references: [id], onDelete: Cascade)
+
+  @@index([tweetId])
+  @@index([tokenTicker])
+  @@map("token_mentions")
+}
+
+model ProjectMention {
+  id             String   @id @default(cuid())
+  tweetId        String
+  projectName    String
+  mentionContext String?  @db.Text
+  createdAt      DateTime @default(now())
+
+  tweet          Tweet    @relation(fields: [tweetId], references: [id], onDelete: Cascade)
+
+  @@index([tweetId])
+  @@index([projectName])
+  @@map("project_mentions")
+}
+
+model NarrativeTag {
+  id            String   @id @default(cuid())
+  tweetId       String
+  narrativeName String
+  relevanceScore Float   @default(1.0)
+  createdAt     DateTime @default(now())
+
+  tweet         Tweet    @relation(fields: [tweetId], references: [id], onDelete: Cascade)
+
+  @@index([tweetId])
+  @@index([narrativeName])
+  @@map("narrative_tags")
+}
+
+model TwitterList {
+  id          String   @id @default(cuid())
+  name        String
+  listUrl     String   @unique
+  listId      String   @unique
+  description String?
+  isActive    Boolean  @default(true)
+  lastScraped DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("twitter_lists")
+}
