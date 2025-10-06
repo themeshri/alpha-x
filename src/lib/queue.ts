@@ -3,6 +3,7 @@ import { redis } from './redis';
 import { scrapeTweetsFromList } from './apify';
 import { analyzeTweet } from './analyzeTweet';
 import { prisma } from './prisma';
+import { fetchTweetMedia } from './twitterSyndication';
 
 // Create queues
 export const scrapeQueue = new Queue('scrape-tweets', {
@@ -17,7 +18,7 @@ export const analyzeQueue = new Queue('analyze-tweets', {
 export const scrapeWorker = new Worker(
   'scrape-tweets',
   async (job) => {
-    const { listUrl } = job.data;
+    const { listUrl, listId } = job.data;
 
     console.log(`Starting scrape for list: ${listUrl}`);
     const tweets = await scrapeTweetsFromList(listUrl);
@@ -53,13 +54,30 @@ export const scrapeWorker = new Worker(
         },
       });
 
-      // Create tweet
+      // Fetch media URLs from Twitter Syndication API
+      let mediaUrls: string[] = tweet.mediaUrls || [];
+
+      // If Apify didn't provide media, try to fetch from syndication API
+      if (mediaUrls.length === 0) {
+        try {
+          mediaUrls = await fetchTweetMedia(tweet.id);
+          if (mediaUrls.length > 0) {
+            console.log(`Fetched ${mediaUrls.length} media URL(s) for tweet ${tweet.id}`);
+          }
+        } catch (error) {
+          console.warn(`Could not fetch media for tweet ${tweet.id}:`, error);
+        }
+      }
+
+      // Create tweet with list association
       const newTweet = await prisma.tweet.create({
         data: {
           tweetId: tweet.id,
           userId: user.id,
+          listId: listId || null, // Associate tweet with list
           tweetText: tweet.text,
           tweetUrl: tweet.url,
+          mediaUrls,
           createdAt: new Date(tweet.createdAt),
           likesCount: tweet.likeCount,
           retweetsCount: tweet.retweetCount,
@@ -111,19 +129,18 @@ export const analyzeWorker = new Worker(
       data: {
         tweetId: tweet.id,
         primaryCategory: analysis.category,
-        sentiment: analysis.sentiment,
         confidenceScore: analysis.confidenceScore,
         summary: analysis.summary,
       },
     });
 
-    // Save token mentions
+    // Save token mentions (case-insensitive, uppercase ticker)
     for (const token of analysis.tokens) {
       await prisma.tokenMention.create({
         data: {
           tweetId: tweet.id,
-          tokenTicker: token.ticker,
-          tokenName: token.name,
+          tokenTicker: token.ticker.toUpperCase(), // Normalize to uppercase
+          tokenName: token.name?.toLowerCase(), // Normalize to lowercase for matching
           mentionContext: token.context,
         },
       });

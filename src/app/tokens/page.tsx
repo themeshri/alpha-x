@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useState } from 'react';
+import { TokenModal } from '@/components/TokenModal';
 
 async function fetchTrendingTokens(range: string) {
   const res = await fetch(`/api/tokens/trending?range=${range}&limit=50`);
@@ -12,6 +13,7 @@ async function fetchTrendingTokens(range: string) {
 
 export default function TokensPage() {
   const [timeRange, setTimeRange] = useState('24h');
+  const [selectedToken, setSelectedToken] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['trending-tokens', timeRange],
@@ -38,18 +40,26 @@ export default function TokensPage() {
           </div>
 
           {/* Time Range Filter */}
-          <div className="mt-4 flex gap-2">
-            {['24h', '7d', '30d'].map((range) => (
+          <div className="mt-4 flex gap-2 flex-wrap">
+            {[
+              { label: 'Last 15min', value: '15m' },
+              { label: 'Last 1h', value: '1h' },
+              { label: 'Last 6h', value: '6h' },
+              { label: 'Last 24h', value: '24h' },
+              { label: 'Last 7d', value: '7d' },
+              { label: 'Last 30d', value: '30d' },
+              { label: 'Older than 24h', value: 'older' },
+            ].map((range) => (
               <button
-                key={range}
-                onClick={() => setTimeRange(range)}
+                key={range.value}
+                onClick={() => setTimeRange(range.value)}
                 className={`px-4 py-2 rounded-lg transition-colors ${
-                  timeRange === range
+                  timeRange === range.value
                     ? 'bg-blue-600 text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
-                {range === '24h' ? 'Last 24 Hours' : range === '7d' ? 'Last 7 Days' : 'Last 30 Days'}
+                {range.label}
               </button>
             ))}
           </div>
@@ -83,12 +93,16 @@ export default function TokensPage() {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {data.tokens.map((token: any, idx: number) => (
-                  <tr key={idx} className="hover:bg-gray-50">
+                  <tr
+                    key={idx}
+                    className="hover:bg-gray-50 cursor-pointer transition-colors"
+                    onClick={() => setSelectedToken(token.ticker)}
+                  >
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       #{idx + 1}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-lg font-semibold text-gray-900">
+                      <span className="text-lg font-semibold text-gray-900 hover:text-blue-600">
                         ${token.ticker}
                       </span>
                     </td>
@@ -111,6 +125,14 @@ export default function TokensPage() {
           </div>
         )}
       </main>
+
+      {/* Token Modal */}
+      {selectedToken && (
+        <TokenModal
+          ticker={selectedToken}
+          onClose={() => setSelectedToken(null)}
+        />
+      )}
     </div>
   );
 }

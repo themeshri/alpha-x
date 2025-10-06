@@ -33,8 +33,10 @@ model Tweet {
   id            String   @id @default(cuid())
   tweetId       String   @unique
   userId        String
+  listId        String?  // Twitter list this tweet came from
   tweetText     String   @db.Text
   tweetUrl      String
+  mediaUrls     String[] @default([])
   createdAt     DateTime
   likesCount    Int      @default(0)
   retweetsCount Int      @default(0)
@@ -42,6 +44,7 @@ model Tweet {
   scrapedAt     DateTime @default(now())
 
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  list          TwitterList? @relation(fields: [listId], references: [id], onDelete: SetNull)
   analysis      TweetAnalysis?
   tokenMentions TokenMention[]
   projectMentions ProjectMention[]
@@ -52,6 +55,8 @@ model Tweet {
   @@index([likesCount])
   @@index([userId, createdAt])
   @@index([scrapedAt])
+  @@index([listId])
+  @@index([listId, createdAt])
   @@map("tweets")
 }
 
@@ -59,7 +64,6 @@ model TweetAnalysis {
   id              String   @id @default(cuid())
   tweetId         String   @unique
   primaryCategory String
-  sentiment       String
   confidenceScore Float
   summary         String?  @db.Text
   analyzedAt      DateTime @default(now())
@@ -67,9 +71,7 @@ model TweetAnalysis {
   tweet           Tweet    @relation(fields: [tweetId], references: [id], onDelete: Cascade)
 
   @@index([primaryCategory])
-  @@index([sentiment])
   @@index([primaryCategory, analyzedAt])
-  @@index([sentiment, analyzedAt])
   @@map("tweet_analysis")
 }
 
@@ -128,6 +130,8 @@ model TwitterList {
   lastScraped DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  tweets      Tweet[]
 
   @@map("twitter_lists")
 }

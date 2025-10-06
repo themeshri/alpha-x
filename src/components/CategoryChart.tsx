@@ -4,11 +4,13 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 
 interface CategoryChartProps {
   data: Record<string, number>;
+  onCategoryClick?: (category: string) => void;
 }
 
-export function CategoryChart({ data }: CategoryChartProps) {
+export function CategoryChart({ data, onCategoryClick }: CategoryChartProps) {
   const chartData = Object.entries(data).map(([category, count]) => ({
     category: category.replace(/_/g, ' '),
+    rawCategory: category,
     count,
   }));
 
@@ -19,6 +21,12 @@ export function CategoryChart({ data }: CategoryChartProps) {
       </div>
     );
   }
+
+  const handleBarClick = (data: any) => {
+    if (onCategoryClick && data?.rawCategory) {
+      onCategoryClick(data.rawCategory);
+    }
+  };
 
   return (
     <ResponsiveContainer width="100%" height={300}>
@@ -34,7 +42,13 @@ export function CategoryChart({ data }: CategoryChartProps) {
         <YAxis />
         <Tooltip />
         <Legend />
-        <Bar dataKey="count" fill="#3b82f6" name="Tweet Count" />
+        <Bar
+          dataKey="count"
+          fill="#3b82f6"
+          name="Tweet Count"
+          cursor="pointer"
+          onClick={handleBarClick}
+        />
       </BarChart>
     </ResponsiveContainer>
   );

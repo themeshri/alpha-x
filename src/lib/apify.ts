@@ -62,6 +62,9 @@ export async function scrapeTweetsFromList(
       likeCount: item.likeCount || 0,
       retweetCount: item.retweetCount || 0,
       replyCount: item.replyCount || 0,
+      mediaUrls: item.media?.map((m: any) => m.url || m.photo || m.preview_image_url).filter(Boolean) ||
+                 item.photos?.map((p: any) => p.url).filter(Boolean) ||
+                 [],
       author: {
         userName: item.author?.userName || '',
         name: item.author?.name || '',
@@ -107,6 +110,9 @@ export async function scrapeTweetsFromMultipleLists(
       likeCount: item.likeCount || 0,
       retweetCount: item.retweetCount || 0,
       replyCount: item.replyCount || 0,
+      mediaUrls: item.media?.map((m: any) => m.url || m.photo || m.preview_image_url).filter(Boolean) ||
+                 item.photos?.map((p: any) => p.url).filter(Boolean) ||
+                 [],
       author: {
         userName: item.author?.userName || '',
         name: item.author?.name || '',

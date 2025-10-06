@@ -5,6 +5,7 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const timeRange = searchParams.get('range') || '24h';
+    const listId = searchParams.get('listId');
 
     const now = new Date();
     let startDate = new Date();
@@ -21,6 +22,8 @@ export async function GET(request: Request) {
         break;
     }
 
+    const tweetWhere = listId ? { listId } : {};
+
     const [totalTweets, totalUsers, analyzedTweets, totalTokenMentions] =
       await Promise.all([
         prisma.tweet.count({
@@ -28,14 +31,24 @@ export async function GET(request: Request) {
             createdAt: {
               gte: startDate,
             },
+            ...tweetWhere,
           },
         }),
-        prisma.user.count(),
+        listId
+          ? prisma.user.count({
+              where: {
+                tweets: {
+                  some: { listId },
+                },
+              },
+            })
+          : prisma.user.count(),
         prisma.tweetAnalysis.count({
           where: {
             analyzedAt: {
               gte: startDate,
             },
+            tweet: tweetWhere,
           },
         }),
         prisma.tokenMention.count({
@@ -43,6 +56,7 @@ export async function GET(request: Request) {
             createdAt: {
               gte: startDate,
             },
+            tweet: tweetWhere,
           },
         }),
       ]);

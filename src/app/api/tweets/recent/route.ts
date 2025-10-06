@@ -6,8 +6,12 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '20');
     const offset = parseInt(searchParams.get('offset') || '0');
+    const listId = searchParams.get('listId');
+
+    const whereClause = listId ? { listId } : {};
 
     const tweets = await prisma.tweet.findMany({
+      where: whereClause,
       orderBy: { createdAt: 'desc' },
       take: limit,
       skip: offset,

@@ -8,8 +8,6 @@ export type TweetCategory =
   | 'news_announcement'
   | 'other';
 
-export type Sentiment = 'bullish' | 'neutral' | 'bearish';
-
 export type UrgencyLevel = 'breaking' | 'timely' | 'general';
 
 export interface TweetAnalysisResult {
@@ -27,7 +25,6 @@ export interface TweetAnalysisResult {
     name: string;
     relevance: number;
   }>;
-  sentiment: Sentiment;
   urgency: UrgencyLevel;
   summary: string;
   confidenceScore: number;
@@ -41,6 +38,7 @@ export interface ApifyTweetData {
   likeCount: number;
   retweetCount: number;
   replyCount: number;
+  mediaUrls?: string[];
   author: {
     userName: string;
     name: string;

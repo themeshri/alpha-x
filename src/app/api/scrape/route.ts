@@ -7,7 +7,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { listUrl, listId, scrapeAll } = body;
 
-    let listUrls: string[] = [];
+    let listsToScrape: Array<{ listUrl: string; listId: string }> = [];
 
     if (scrapeAll) {
       // Scrape all active lists
@@ -22,7 +22,10 @@ export async function POST(request: Request) {
         );
       }
 
-      listUrls = lists.map((list) => list.listUrl);
+      listsToScrape = lists.map((list) => ({
+        listUrl: list.listUrl,
+        listId: list.id,
+      }));
     } else if (listId) {
       // Scrape specific list by ID
       const list = await prisma.twitterList.findUnique({
@@ -36,10 +39,10 @@ export async function POST(request: Request) {
         );
       }
 
-      listUrls = [list.listUrl];
+      listsToScrape = [{ listUrl: list.listUrl, listId: list.id }];
     } else if (listUrl) {
-      // Scrape one-time URL (not saved)
-      listUrls = [listUrl];
+      // Scrape one-time URL (not saved) - no listId
+      listsToScrape = [{ listUrl, listId: '' }];
     } else {
       return NextResponse.json(
         { error: 'listUrl, listId, or scrapeAll is required' },
@@ -49,16 +52,31 @@ export async function POST(request: Request) {
 
     // Queue scraping jobs
     const jobs = await Promise.all(
-      listUrls.map((url) =>
-        scrapeQueue.add('scrape', { listUrl: url })
+      listsToScrape.map((item) =>
+        scrapeQueue.add('scrape', {
+          listUrl: item.listUrl,
+          listId: item.listId || undefined,
+        })
       )
+    );
+
+    // Update lastScraped timestamp for each list
+    await Promise.all(
+      listsToScrape
+        .filter((item) => item.listId) // Only update lists with IDs
+        .map((item) =>
+          prisma.twitterList.update({
+            where: { id: item.listId },
+            data: { lastScraped: new Date() },
+          })
+        )
     );
 
     return NextResponse.json({
       success: true,
       jobIds: jobs.map((job) => job.id),
-      listsCount: listUrls.length,
-      message: `Queued scraping for ${listUrls.length} list(s)`,
+      listsCount: listsToScrape.length,
+      message: `Queued scraping for ${listsToScrape.length} list(s)`,
     });
   } catch (error) {
     console.error('Error queueing scrape job:', error);

@@ -13,6 +13,15 @@ export async function GET(request: Request) {
     let startDate = new Date();
 
     switch (timeRange) {
+      case '15m':
+        startDate.setMinutes(now.getMinutes() - 15);
+        break;
+      case '1h':
+        startDate.setHours(now.getHours() - 1);
+        break;
+      case '6h':
+        startDate.setHours(now.getHours() - 6);
+        break;
       case '24h':
         startDate.setHours(now.getHours() - 24);
         break;

@@ -61,18 +61,25 @@ export default function TweetsPage() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Time Range
               </label>
-              <div className="flex gap-2">
-                {['24h', '7d', '30d'].map((range) => (
+              <div className="flex gap-2 flex-wrap">
+                {[
+                  { label: '15min', value: '15m' },
+                  { label: '1h', value: '1h' },
+                  { label: '6h', value: '6h' },
+                  { label: '24h', value: '24h' },
+                  { label: '7d', value: '7d' },
+                  { label: '30d', value: '30d' },
+                ].map((range) => (
                   <button
-                    key={range}
-                    onClick={() => setTimeRange(range)}
+                    key={range.value}
+                    onClick={() => setTimeRange(range.value)}
                     className={`px-4 py-2 rounded-lg transition-colors ${
-                      timeRange === range
+                      timeRange === range.value
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
-                    {range === '24h' ? '24 Hours' : range === '7d' ? '7 Days' : '30 Days'}
+                    {range.label}
                   </button>
                 ))}
               </div>

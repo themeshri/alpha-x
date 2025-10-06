@@ -5,11 +5,22 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const timeRange = searchParams.get('range') || '24h';
+    const listId = searchParams.get('listId');
 
     const now = new Date();
-    let startDate = new Date();
+    let startDate: Date | undefined = new Date();
+    let endDate: Date | undefined;
 
     switch (timeRange) {
+      case '15m':
+        startDate.setMinutes(now.getMinutes() - 15);
+        break;
+      case '1h':
+        startDate.setHours(now.getHours() - 1);
+        break;
+      case '6h':
+        startDate.setHours(now.getHours() - 6);
+        break;
       case '24h':
         startDate.setHours(now.getHours() - 24);
         break;
@@ -19,28 +30,39 @@ export async function GET(request: Request) {
       case '30d':
         startDate.setDate(now.getDate() - 30);
         break;
+      case 'older':
+        // Tweets older than 24 hours
+        endDate = new Date();
+        endDate.setHours(now.getHours() - 24);
+        startDate = undefined; // No start limit
+        break;
     }
+
+    // Build where clause for tweet filtering by list
+    const tweetWhere = listId ? { listId } : {};
 
     const categories = await prisma.tweetAnalysis.groupBy({
       by: ['primaryCategory'],
       where: {
         analyzedAt: {
-          gte: startDate,
+          ...(startDate ? { gte: startDate } : {}),
+          ...(endDate ? { lte: endDate } : {}),
         },
+        tweet: tweetWhere,
       },
       _count: {
-        id: true,
+        primaryCategory: true,
       },
       orderBy: {
         _count: {
-          id: 'desc',
+          primaryCategory: 'desc',
         },
       },
     });
 
     const result: Record<string, number> = {};
     categories.forEach((c) => {
-      result[c.primaryCategory] = c._count.id;
+      result[c.primaryCategory] = c._count.primaryCategory;
     });
 
     return NextResponse.json({ categories: result, timeRange });

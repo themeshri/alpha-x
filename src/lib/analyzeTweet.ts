@@ -25,7 +25,6 @@ Respond ONLY with valid JSON matching this exact structure:
   "tokens": [{"ticker": "BTC", "name": "Bitcoin", "context": "price prediction"}],
   "projects": [{"name": "Uniswap", "context": "new feature launch"}],
   "narratives": [{"name": "DeFi Summer", "relevance": 0.9}],
-  "sentiment": "bullish" | "neutral" | "bearish",
   "urgency": "breaking" | "timely" | "general",
   "summary": "One sentence insight",
   "confidenceScore": 0.85
@@ -41,7 +40,13 @@ Categories:
 - news_announcement: Breaking news, launches
 - other: Everything else
 
-Extract ALL token tickers (e.g., $BTC, $ETH), projects mentioned, and narrative themes.`;
+IMPORTANT:
+- Extract ALL token tickers (e.g., $BTC, $ETH, $USELESS)
+- Token names are CASE-INSENSITIVE: $BTC = $btc = $Btc
+- If you see a token with $ (like $USELESS), also detect it WITHOUT $ later in the tweet
+  Example: "$USELESS is great. I love useless." → Both count as $USELESS mentions
+- Include the token name in lowercase in the "name" field for matching
+`;
 
 export async function analyzeTweet(tweetText: string): Promise<TweetAnalysisResult> {
   try {

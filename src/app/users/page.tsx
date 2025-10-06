@@ -98,6 +98,28 @@ export default function UsersPage() {
                     <p className="text-xs text-gray-500">Avg RTs</p>
                   </div>
                 </div>
+
+                {/* Token Badges */}
+                {user.topTokens && user.topTokens.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <p className="text-xs font-medium text-gray-500 mb-2">
+                      Top Mentioned Tokens
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {user.topTokens.map((token: any, idx: number) => (
+                        <span
+                          key={idx}
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                        >
+                          ${token.ticker}
+                          <span className="text-blue-600 font-semibold">
+                            {token.count}
+                          </span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </Link>
             ))}
           </div>

@@ -6,6 +6,7 @@ interface TweetCardProps {
     id: string;
     tweetText: string;
     tweetUrl: string;
+    mediaUrls?: string[];
     createdAt: string | Date;
     likesCount: number;
     retweetsCount: number;
@@ -63,6 +64,21 @@ export function TweetCard({ tweet }: TweetCardProps) {
 
           <p className="mt-2 text-gray-800 whitespace-pre-wrap">{tweet.tweetText}</p>
 
+          {/* Display Images */}
+          {tweet.mediaUrls && tweet.mediaUrls.length > 0 && (
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              {tweet.mediaUrls.slice(0, 4).map((url, idx) => (
+                <img
+                  key={idx}
+                  src={url}
+                  alt={`Tweet media ${idx + 1}`}
+                  className="rounded-lg w-full h-auto object-cover max-h-64"
+                  loading="lazy"
+                />
+              ))}
+            </div>
+          )}
+
           {tweet.tokenMentions && tweet.tokenMentions.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-1">
               {tweet.tokenMentions.map((mention, idx) => (
@@ -95,21 +111,10 @@ export function TweetCard({ tweet }: TweetCardProps) {
             <span className="text-gray-500">
               {formatDistanceToNow(createdAt, { addSuffix: true })}
             </span>
-            {tweet.analysis && (
-              <>
-                <span className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
-                  {tweet.analysis.primaryCategory.replace('_', ' ')}
-                </span>
-                <span className={`px-2 py-0.5 rounded ${
-                  tweet.analysis.sentiment === 'bullish'
-                    ? 'bg-green-100 text-green-800'
-                    : tweet.analysis.sentiment === 'bearish'
-                    ? 'bg-red-100 text-red-800'
-                    : 'bg-gray-100 text-gray-700'
-                }`}>
-                  {tweet.analysis.sentiment}
-                </span>
-              </>
+            {tweet.analysis?.category && (
+              <span className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
+                {tweet.analysis.category.replace(/_/g, ' ')}
+              </span>
             )}
           </div>
         </div>
