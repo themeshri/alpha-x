@@ -47,7 +47,7 @@ export async function analyzeTweet(tweetText: string): Promise<TweetAnalysisResu
   try {
     const openai = getOpenAIClient();
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4-turbo-preview', // or 'gpt-3.5-turbo' for cheaper option
+      model: 'gpt-3.5-turbo',
       messages: [
         {
           role: 'system',

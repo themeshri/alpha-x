@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "worker": "tsx scripts/worker.ts",
+    "import": "tsx scripts/import-tweets.ts",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio"
